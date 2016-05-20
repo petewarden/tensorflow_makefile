@@ -102,7 +102,8 @@ INCLUDES = \
 -I$(PBTGENDIR)
 LIBS = \
 -lstdc++ \
--lprotobuf
+-lprotobuf \
+-lm
 PROTOC = protoc
 PROTOCFLAGS =
 AR = ar
