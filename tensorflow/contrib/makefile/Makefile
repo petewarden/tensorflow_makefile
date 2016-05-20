@@ -22,12 +22,12 @@ ifeq ($(OS),Windows_NT)
 	HOST_OS = WINDOWS
 else
 	UNAME_S := $(shell uname -s)
-    	ifeq ($(UNAME_S),Linux)
+	ifeq ($(UNAME_S),Linux)
 	        HOST_OS = LINUX
-    	endif
-    	ifeq ($(UNAME_S),Darwin)
-        	HOST_OS = OSX
-    	endif
+	endif
+	ifeq ($(UNAME_S),Darwin)
+		HOST_OS = OSX
+	endif
 endif
 
 # Where compiled objects are stored.
@@ -108,10 +108,15 @@ PROTOC = protoc
 PROTOCFLAGS =
 AR = ar
 ARFLAGS = -r
+LIBFLAGS =
 
 # If we're on OS X, make sure that globals aren't stripped out.
 ifeq ($(TARGET),OSX)
 	LDFLAGS += -all_load
+endif
+# Make sure that we don't strip global constructors on Linux.
+ifeq ($(TARGET),LINUX)
+	LIBFLAGS += -Wl,--allow-multiple-definition -Wl,--whole-archive
 endif
 # If we're on Linux, also link in the dl library.
 ifeq ($(TARGET),LINUX)
@@ -158,7 +163,8 @@ $(LIB_NAME): $(LIB_OBJS)
 $(BENCHMARK_NAME): $(BENCHMARK_OBJS) $(LIB_NAME)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) \
-	-o $(BENCHMARK_NAME) $(BENCHMARK_OBJS) $(LIB_NAME) $(LDFLAGS) $(LIBS)
+	-o $(BENCHMARK_NAME) $(BENCHMARK_OBJS) \
+	$(LIBFLAGS) $(LIB_NAME) $(LDFLAGS) $(LIBS)
 
 # Matches on the normal hand-written TensorFlow C++ source files.
 $(OBJDIR)%.o: %.cc 
