@@ -16,6 +16,20 @@
 # Find where we're running from, so we can store generated files here.
 MAKEFILE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
+# Try to figure out the host system
+HOST_OS =
+ifeq ($(OS),Windows_NT)
+	HOST_OS = WINDOWS
+else
+	UNAME_S := $(shell uname -s)
+    	ifeq ($(UNAME_S),Linux)
+	        HOST_OS = LINUX
+    	endif
+    	ifeq ($(UNAME_S),Darwin)
+        	HOST_OS = OSX
+    	endif
+endif
+
 # Where compiled objects are stored.
 HOST_OBJDIR = $(MAKEFILE_DIR)/gen/host_obj/
 HOST_BINDIR = $(MAKEFILE_DIR)/gen/host_bin/
@@ -34,7 +48,13 @@ HOST_INCLUDES = \
 -I$(HOST_GENDIR)
 HOST_LIBS = \
 -lstdc++ \
--lprotobuf
+-lprotobuf \
+-lm
+
+# If we're on Linux, also link in the dl library.
+ifeq ($(HOST_OS),LINUX)
+	HOST_LIBS += -ldl
+endif
 
 # proto_text is a tool that converts protobufs into a form we can use more
 # compactly within TensorFlow. It's a bit like protoc, but is designed to
@@ -56,6 +76,11 @@ PROTO_TEXT_OBJS = $(PROTO_TEXT_CC_OBJS) $(PROTO_TEXT_PB_OBJS)
 
 # Target device settings.
 
+# Default to running on the same system we're compiling on.
+# You should override TARGET on the command line if you're cross-compiling, e.g.
+# make -f tensorflow/contrib/makefile/Makefile TARGET=ANDROID
+TARGET = $(HOST_OS)
+
 # Where compiled objects are stored.
 OBJDIR = $(MAKEFILE_DIR)/gen/obj/
 LIBDIR = $(MAKEFILE_DIR)/gen/lib/
@@ -67,8 +92,7 @@ PROTOGENDIR = $(MAKEFILE_DIR)/gen/proto/
 CXX = gcc
 CXXFLAGS = --std=c++11
 LDFLAGS = \
--L/usr/local/lib \
--all_load
+-L/usr/local/lib
 INCLUDES = \
 -I/usr/local/include \
 -I. \
@@ -83,6 +107,11 @@ PROTOC = protoc
 PROTOCFLAGS =
 AR = ar
 ARFLAGS = -r
+
+# If we're on OS X, make sure that globals aren't stripped out.
+ifeq ($(TARGET),OSX)
+	LDFLAGS += -all_load
+endif
 
 # This library is the main target for this makefile. It will contain a minimal
 # runtime that can be linked in to other programs.
