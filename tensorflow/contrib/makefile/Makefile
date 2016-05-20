@@ -114,8 +114,8 @@ ifeq ($(TARGET),OSX)
 	LDFLAGS += -all_load
 endif
 # If we're on Linux, also link in the dl library.
-ifeq ($(HOST_OS),LINUX)
-	HOST_LIBS += -ldl
+ifeq ($(TARGET),LINUX)
+	LIBS += -ldl
 endif
 
 # This library is the main target for this makefile. It will contain a minimal
